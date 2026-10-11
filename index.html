@@ -61,7 +61,7 @@ button { cursor: pointer; }
 .bar i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 99px; transition: width .35s ease; }
 
 /* tabs */
-.tabs { display: flex; gap: 8px; overflow-x: auto; padding-block: 14px 4px; scrollbar-width: none; }
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; padding-block: 14px 4px; }
 .tabs::-webkit-scrollbar { display: none; }
 .tab { flex: none; border: 1.5px solid var(--line); background: var(--surface); border-radius: 99px; padding: 7px 14px; font-family: var(--font-display); font-weight: 700; font-size: .9rem; white-space: nowrap; }
 .tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
