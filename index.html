@@ -962,7 +962,7 @@ body{margin:0}
       if (assetsApi) {
         html += '<label>カード画像</label>' +
           '<div class="row"><button class="btn primary" type="button" data-act="shot">スクショから取り込む</button><button class="btn" type="button" data-act="imgBulk">番号付きファイルをまとめて追加</button></div>' +
-          '<p class="hint" style="margin:0">任天堂の公式一覧を2列のまま縦にスクショして選ぶと、全体が見えているカードだけを順に切り出します。1枚ずつは各カードの「画像」から設定できます。</p>' + shotHtml();
+          '<p class="hint" style="margin:0">任天堂の公式一覧を2列のまま縦にスクショして選ぶと、全体が見えているカードだけを順に切り出します。ページ全体のスクショ（フルページ）も使えます。1枚ずつは各カードの「画像」から設定できます。</p>' + shotHtml();
       }
       if (!l.virtual) {
         html += '<label for="newCardName">カードを追加</label>' +
@@ -1103,7 +1103,7 @@ body{margin:0}
       for (y = 0; y < H; y++) {
         if (inked(x, y)) { run++; if (run > best) best = run; } else run = 0;
       }
-      vflags[x] = best >= H * 0.1;
+      vflags[x] = best >= Math.min(H * 0.1, W * 0.4);
     }
     var maxThin = Math.max(6, W * 0.02);
     function isWhite(x, y) { var i = (y * W + x) * 4; return 765 - data[i] - data[i + 1] - data[i + 2] <= 60; }
@@ -1159,7 +1159,7 @@ body{margin:0}
           }
         }
         var w = maxX - minX + 1, h = y1 - y0 + 1, ratio = w / h;
-        if (y0 < 1 || y1 > H - 2 || h < H * 0.05 || (wide ? (ratio < 1.1 || ratio > 1.8) : (ratio < 0.66 || ratio > 0.8))) continue;
+        if (y0 < 1 || y1 > H - 2 || h < Math.min(H * 0.05, W * 0.12) || (wide ? (ratio < 1.1 || ratio > 1.8) : (ratio < 0.66 || ratio > 0.8))) continue;
         rects.push({ x: minX, y: y0, w: w, h: h });
       }
     }
@@ -1180,19 +1180,25 @@ body{margin:0}
       if (!f) return;
       say('切り出し中…');
       createImageBitmap(f).then(function (bmp) {
+        /* very tall (full-page) screenshots: look for the cards on a reduced copy, then cut them from the original */
+        var sc = Math.min(1, Math.sqrt(12e6 / (bmp.width * bmp.height)));
         var cv = document.createElement('canvas');
-        cv.width = bmp.width; cv.height = bmp.height;
+        cv.width = Math.max(1, Math.round(bmp.width * sc)); cv.height = Math.max(1, Math.round(bmp.height * sc));
         var ctx = cv.getContext('2d');
-        ctx.drawImage(bmp, 0, 0);
+        ctx.drawImage(bmp, 0, 0, cv.width, cv.height);
         var d = ctx.getImageData(0, 0, cv.width, cv.height);
-        var rects = detectCards(d.data, cv.width, cv.height, (state.active === 'sanrio' || state.active === 'plus'));
-        if (!rects.length) { shot = null; say('カードを切り出せませんでした（画像 ' + cv.width + '×' + cv.height + '）。任天堂の公式一覧が見えているスクショか確認してください。'); renderPanel(); return; }
+        var rects = detectCards(d.data, cv.width, cv.height, state.active === 'sanrio' || state.active === 'plus');
+        if (!rects.length) { shot = null; say('カードを切り出せませんでした（画像 ' + bmp.width + '×' + bmp.height + '）。任天堂の公式一覧が見えているスクショか確認してください。'); renderPanel(); return; }
+        rects = rects.map(function (r) {
+          var x = Math.max(0, Math.floor(r.x / sc)), y = Math.max(0, Math.floor(r.y / sc));
+          return { x: x, y: y, w: Math.min(bmp.width - x, Math.ceil(r.w / sc)), h: Math.min(bmp.height - y, Math.ceil(r.h / sc)) };
+        });
         shot = {
           start: firstMissingIndex(cur().cards),
           crops: rects.map(function (r) {
             var c = document.createElement('canvas');
             c.width = r.w; c.height = r.h;
-            c.getContext('2d').drawImage(cv, r.x, r.y, r.w, r.h, 0, 0, r.w, r.h);
+            c.getContext('2d').drawImage(bmp, r.x, r.y, r.w, r.h, 0, 0, r.w, r.h);
             return { canvas: c, thumb: c.toDataURL('image/jpeg', 0.7) };
           })
         };
