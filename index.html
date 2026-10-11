@@ -1,0 +1,1324 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>amiiboカード チェックリスト</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: sticky ownership-rate header, scrolling series tabs, then a grid of card-shaped tiles in card-number order. Tap a tile to mark it owned. */
+:root {
+  --bg: #ECF2EE;
+  --surface: #FFFFFF;
+  --ink: #16302A;
+  --muted: #5B7068;
+  --line: #CFDDD5;
+  --accent: #2B8A68;
+  --accent-ink: #FFFFFF;
+  --spare: #A5640B;
+  --spare-bg: #FFEFCF;
+  --danger: #B3402F;
+  --ts: 58%; --tl: 82%;
+  --gs: 45%; --gl: 26%;
+  --us: 12%; --ul: 92%;
+  --font-display: 'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', 'Yu Gothic', sans-serif;
+  --font-body: 'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic', system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E1815; --surface: #162622; --ink: #E3F0EA; --muted: #92AAA1; --line: #29443D;
+    --accent: #52C79A; --accent-ink: #0B1F18; --spare: #F0B955; --spare-bg: #3A2C10; --danger: #F08A78;
+    --ts: 34%; --tl: 30%; --gs: 60%; --gl: 86%; --us: 14%; --ul: 20%;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0E1815; --surface: #162622; --ink: #E3F0EA; --muted: #92AAA1; --line: #29443D;
+  --accent: #52C79A; --accent-ink: #0B1F18; --spare: #F0B955; --spare-bg: #3A2C10; --danger: #F08A78;
+  --ts: 34%; --tl: 30%; --gs: 60%; --gl: 86%; --us: 14%; --ul: 20%;
+  color-scheme: dark;
+}
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.5; padding-block: 0 40px; }
+.wrap { max-width: 680px; margin-inline: auto; padding-inline: 16px; }
+button, input, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* header */
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); border-bottom: 1px solid var(--line); padding-block: 10px 12px; }
+.top-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.eyebrow { font-size: .78rem; color: var(--muted); letter-spacing: .04em; min-width: 0; overflow-wrap: anywhere; }
+.rate { font-family: var(--font-display); font-weight: 900; font-size: 2.7rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.rate small { font-size: 1.1rem; margin-left: 2px; }
+.rate-label { font-size: .8rem; font-weight: 700; margin-right: 8px; font-family: var(--font-display); color: var(--muted); }
+.count { font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; padding-bottom: 4px; }
+.count span { display: block; font-size: .78rem; color: var(--spare); font-weight: 700; }
+.bar { height: 8px; border-radius: 99px; background: var(--line); overflow: hidden; margin-top: 10px; }
+.bar i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 99px; transition: width .35s ease; }
+
+/* tabs */
+.tabs { display: flex; gap: 8px; overflow-x: auto; padding-block: 14px 4px; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab { flex: none; border: 1.5px solid var(--line); background: var(--surface); border-radius: 99px; padding: 7px 14px; font-family: var(--font-display); font-weight: 700; font-size: .9rem; white-space: nowrap; }
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+
+/* controls */
+.controls { display: flex; flex-wrap: wrap; gap: 10px 12px; align-items: center; justify-content: space-between; padding-block: 12px 4px; }
+.seg { display: inline-flex; border: 1.5px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--surface); }
+.seg button { border: 0; background: transparent; padding: 6px 11px; font-size: .84rem; font-weight: 500; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); font-weight: 700; }
+.bulk { display: flex; gap: 8px; }
+.btn { border: 1.5px solid var(--line); background: var(--surface); border-radius: 10px; padding: 7px 13px; font-size: .86rem; font-weight: 700; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.danger { color: var(--danger); border-color: var(--danger); }
+.search { width: 100%; border: 1.5px solid var(--line); border-radius: 10px; background: var(--surface); padding: 8px 12px; margin-top: 12px; }
+.hint { color: var(--muted); font-size: .8rem; margin: 8px 0 0; }
+
+/* grid + tiles */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(98px, 1fr)); gap: 10px; padding-block: 12px; }
+.tile { position: relative; min-width: 0; }
+.tile-main { width: 100%; display: flex; flex-direction: column; padding: 0; overflow: hidden; border: 1.5px solid var(--line); background: var(--surface); border-radius: 12px; text-align: center; }
+.tile[data-own="1"] .tile-main { border-color: var(--accent); }
+.art { position: relative; aspect-ratio: 3 / 4; display: grid; place-items: center; background: hsl(var(--h) var(--us) var(--ul)); overflow: hidden; }
+.tile[data-own="1"] .art { background: hsl(var(--h) var(--ts) var(--tl)); }
+.art b { font-family: var(--font-display); font-weight: 900; font-size: 2.2rem; color: var(--muted); opacity: .45; }
+.tile[data-own="1"] .art b { color: hsl(var(--h) var(--gs) var(--gl)); opacity: 1; }
+.grid.land .art { aspect-ratio: 4 / 3; }
+.art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.tile:not([data-own="1"]) .art img { opacity: .6; }
+.tile.cc .art { background: color-mix(in srgb, rgb(var(--cc)) 34%, var(--surface)); }
+.tile.cc[data-own="1"] .art { background: rgb(var(--cc)); }
+.tile.cc[data-own="1"] .art b { color: #fff; opacity: .9; }
+.no { position: absolute; left: 6px; bottom: 6px; background: var(--surface); color: var(--muted); border-radius: 99px; padding: 0 7px; font-size: .68rem; font-weight: 700; line-height: 1.6; font-variant-numeric: tabular-nums; }
+.nm { display: block; min-height: 2.7em; padding: 6px 6px 8px; font-size: .78rem; font-weight: 700; line-height: 1.3; overflow-wrap: anywhere; }
+.tile:not([data-own="1"]) .nm { color: var(--muted); font-weight: 500; }
+.chk { position: absolute; top: 6px; left: 6px; width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: none; place-items: center; pointer-events: none; }
+.tile[data-own="1"] .chk { display: grid; }
+.grid.editing .tile[data-own="1"] .chk { display: none; }
+.chk svg { width: 13px; height: 13px; }
+.spare, .del, .imgbtn { position: absolute; top: 5px; right: 5px; min-width: 32px; height: 32px; border-radius: 99px; border: 1.5px solid var(--line); background: var(--surface); font-weight: 700; font-size: .8rem; padding-inline: 6px; line-height: 1; font-variant-numeric: tabular-nums; }
+.spare.on { background: var(--spare-bg); border-color: var(--spare); color: var(--spare); }
+.del { color: var(--danger); border-color: var(--danger); font-size: 1rem; }
+.imgbtn { right: auto; left: 5px; font-size: .72rem; }
+.shotgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 8px; }
+.shotgrid figure { margin: 0; text-align: center; font-size: .7rem; font-weight: 700; min-width: 0; overflow-wrap: anywhere; }
+.shotgrid img { width: 100%; border-radius: 6px; display: block; margin-bottom: 4px; }
+.empty { grid-column: 1 / -1; text-align: center; color: var(--muted); padding: 28px 8px; }
+
+/* actions + panels */
+.actions { display: flex; flex-wrap: wrap; gap: 8px; padding-block: 4px 8px; }
+.actions .btn[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.panel { background: var(--surface); border: 1.5px solid var(--line); border-radius: 14px; padding: 14px 16px 16px; margin-top: 10px; display: grid; gap: 8px; }
+.panel h2 { margin: 0; font-family: var(--font-display); font-size: 1.05rem; }
+.panel h2 small { color: var(--muted); font-weight: 500; margin-left: 6px; }
+.panel label { font-size: .8rem; font-weight: 700; color: var(--muted); }
+.panel input, .panel textarea { width: 100%; min-width: 0; border: 1.5px solid var(--line); border-radius: 10px; background: var(--bg); padding: 9px 11px; }
+.panel textarea { resize: vertical; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.row input { flex: 1 1 160px; }
+.msg { font-size: .82rem; color: var(--accent); }
+#toast { min-height: 1.4em; margin: 8px 0 0; }
+.sync { color: var(--muted); font-size: .76rem; text-align: center; margin: 14px 0 0; }
+@media (prefers-reduced-motion: reduce) { .bar i { transition: none; } }
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0}
+.legal{color:var(--muted);font-size:.74rem;line-height:1.6;margin:18px 0 0;border-top:1px solid var(--line);padding-top:12px}
+.legal p{margin:0 0 6px}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="top-row">
+      <div>
+        <div class="eyebrow" id="listName">どうぶつの森 amiiboカード</div>
+        <div class="rate"><span class="rate-label">所持率</span><span id="pct">0</span><small>%</small></div>
+      </div>
+      <div class="count" id="count">0 / 0種</div>
+    </div>
+    <div class="bar" role="progressbar" aria-label="所持率" aria-valuemin="0" aria-valuemax="100" id="bar"><i id="barfill"></i></div>
+  </div>
+</header>
+
+<main class="wrap">
+  <nav class="tabs" id="tabs" role="tablist" aria-label="カードの弾"></nav>
+
+  <label for="q" class="hint" style="display:none">検索</label>
+  <input class="search" id="q" type="search" placeholder="名前や番号で検索（例：しずえ、425）" autocomplete="off">
+
+  <div class="controls">
+    <div class="seg" id="filters" role="group" aria-label="表示の絞り込み"></div>
+    <div class="bulk">
+      <button class="btn" type="button" data-act="allOwn">全て所持</button>
+      <button class="btn" type="button" data-act="allClear">全て解除</button>
+    </div>
+  </div>
+  <p class="hint">番号順に並んでいます。タップで所持にし、右上の＋でダブり枚数を記録できます。</p>
+
+  <div class="actions">
+    <button class="btn primary" type="button" data-act="panel" data-v="memo" id="btnMemo">交換メモを作る</button>
+    <button class="btn" type="button" data-act="panel" data-v="add" id="btnAdd">弾を追加</button>
+    <button class="btn" type="button" data-act="panel" data-v="edit" id="btnEdit">編集・画像</button>
+    <button class="btn" type="button" data-act="panel" data-v="backup" id="btnBackup">バックアップ</button>
+  </div>
+  <div id="panel"></div>
+  <p class="msg" id="toast" role="status"></p>
+
+  <div class="grid" id="grid"></div>
+  <p class="sync" id="syncMsg" role="status">所持チェックと画像は、このブラウザの中だけに保存されます</p>
+  <div class="legal">
+    <p>非公式のファンツールです。任天堂とは関係ありません。「amiibo」「どうぶつの森」は任天堂の商標または登録商標です。</p>
+    <p>このページにはカード画像は入っていません。カード画像は、あなたが自分でスクショを選んで取り込みます。取り込んだ画像は、あなたの端末のブラウザの中にだけ保存され、サーバーには送られません。画像は私的に使う範囲で、他人に配ったりネットに載せたりしないでください。</p>
+    <p>ブラウザのサイトデータを消すと、所持チェックも画像も消えます。「バックアップ」で所持チェックをファイルに保存しておけます。</p>
+  </div>
+</main>
+
+<script>
+(function () {
+  'use strict';
+  var KEY = 'amiibo-checklist-v2';
+  var OLD_KEY = 'amiibo-checklist-v1';
+
+  /* main colour of each card (just three numbers per card), used to tint tiles that have no picture yet */
+  var COLS = {"n001":"26,166,150","n002":"234,131,16","n003":"59,131,70","n004":"181,205,46","n005":"24,178,216","n006":"221,21,57","n007":"226,70,27","n008":"233,129,15","n009":"25,166,152","n010":"23,178,217","n011":"155,106,98","n012":"151,94,162","n013":"181,207,48","n014":"222,62,134","n015":"226,69,26","n016":"234,131,16","n017":"25,169,69","n018":"237,152,9","n019":"240,143,139","n020":"161,217,235","n021":"232,231,7","n022":"168,181,100","n023":"236,146,179","n024":"155,208,190","n025":"195,167,201","n026":"247,190,7","n027":"228,160,193","n028":"235,230,8","n029":"239,144,139","n030":"238,151,9","n031":"236,146,178","n032":"161,218,234","n033":"206,155,113","n034":"194,167,200","n035":"246,190,6","n036":"234,231,10","n037":"154,207,189","n038":"169,182,100","n039":"206,155,112","n040":"226,156,191","n041":"237,150,9","n042":"247,192,7","n043":"236,146,178","n044":"239,144,139","n045":"160,199,31","n046":"206,156,114","n047":"154,208,189","n048":"154,207,190","n049":"237,146,179","n050":"239,144,139","n051":"206,156,114","n052":"228,160,191","n053":"195,168,199","n054":"161,217,235","n055":"234,231,8","n056":"160,199,31","n057":"154,208,189","n058":"194,167,199","n059":"226,157,190","n060":"161,218,234","n061":"161,199,31","n062":"169,182,100","n063":"168,181,99","n064":"248,192,7","n065":"237,146,179","n066":"161,199,30","n067":"206,155,112","n068":"169,181,100","n069":"238,151,9","n070":"239,144,140","n071":"161,219,235","n072":"226,157,190","n073":"160,200,30","n074":"194,167,200","n075":"233,230,9","n076":"161,218,235","n077":"169,182,100","n078":"247,192,7","n079":"227,157,191","n080":"232,230,7","n081":"239,144,139","n082":"194,167,199","n083":"205,157,114","n084":"229,160,192","n085":"232,230,8","n086":"154,208,189","n087":"168,182,100","n088":"194,168,199","n089":"239,152,10","n090":"238,143,137","n091":"206,157,114","n092":"161,199,31","n093":"168,180,99","n094":"237,146,178","n095":"247,192,8","n096":"226,157,189","n097":"155,208,189","n098":"239,153,11","n099":"235,146,178","n100":"247,192,7","n101":"22,171,70","n102":"21,177,216","n103":"22,166,150","n104":"180,207,47","n105":"23,178,217","n106":"121,138,70","n107":"152,93,162","n108":"233,129,17","n109":"221,19,55","n110":"199,101,157","n111":"224,67,25","n112":"121,137,68","n113":"23,164,149","n114":"153,104,95","n115":"197,102,158","n116":"23,165,148","n117":"180,208,47","n118":"239,151,9","n119":"238,144,140","n120":"168,181,98","n121":"235,231,8","n122":"153,208,189","n123":"161,201,32","n124":"238,151,9","n125":"206,155,113","n126":"169,182,98","n127":"194,167,199","n128":"154,207,189","n129":"160,201,30","n130":"161,217,235","n131":"237,146,179","n132":"226,158,190","n133":"207,156,112","n134":"161,218,235","n135":"168,181,98","n136":"195,168,200","n137":"246,191,7","n138":"236,230,7","n139":"161,218,236","n140":"237,146,179","n141":"161,202,32","n142":"227,159,191","n143":"207,156,113","n144":"161,200,30","n145":"239,151,9","n146":"236,231,9","n147":"247,191,7","n148":"161,201,31","n149":"161,217,235","n150":"236,147,179","n151":"194,168,199","n152":"228,159,190","n153":"247,192,9","n154":"207,157,112","n155":"236,231,8","n156":"155,208,189","n157":"159,199,30","n158":"195,167,200","n159":"247,191,7","n160":"168,181,99","n161":"194,167,200","n162":"236,231,9","n163":"161,201,31","n164":"154,207,189","n165":"244,191,7","n166":"207,156,111","n167":"239,145,140","n168":"160,200,30","n169":"226,158,191","n170":"238,151,8","n171":"195,168,200","n172":"169,182,98","n173":"236,146,179","n174":"246,191,7","n175":"162,218,235","n176":"237,147,179","n177":"235,232,8","n178":"239,152,10","n179":"239,143,139","n180":"162,201,31","n181":"161,219,235","n182":"228,159,191","n183":"248,192,6","n184":"237,147,179","n185":"195,167,201","n186":"239,146,140","n187":"239,152,10","n188":"160,199,28","n189":"194,167,200","n190":"238,143,139","n191":"239,152,10","n192":"235,230,8","n193":"247,193,9","n194":"239,151,8","n195":"236,147,179","n196":"154,208,190","n197":"227,158,191","n198":"161,218,235","n199":"195,168,200","n200":"238,143,138","n201":"154,104,100","n202":"151,93,161","n203":"233,130,17","n204":"223,61,132","n205":"181,207,47","n206":"224,61,133","n207":"233,129,17","n208":"200,102,157","n209":"223,64,135","n210":"152,104,99","n211":"222,20,56","n212":"234,129,18","n213":"21,166,151","n214":"120,137,67","n215":"22,166,150","n216":"151,93,162","n217":"226,68,26","n218":"207,154,112","n219":"236,147,178","n220":"227,159,191","n221":"193,167,199","n222":"169,181,98","n223":"247,192,7","n224":"238,144,139","n225":"238,151,9","n226":"193,167,199","n227":"236,231,8","n228":"164,199,30","n229":"154,208,190","n230":"238,151,8","n231":"228,160,192","n232":"169,182,100","n233":"247,192,7","n234":"162,217,235","n235":"162,201,32","n236":"236,147,177","n237":"236,231,8","n238":"195,168,200","n239":"161,200,30","n240":"168,181,98","n241":"154,208,189","n242":"237,146,178","n243":"207,155,112","n244":"246,191,8","n245":"236,231,8","n246":"155,208,190","n247":"227,159,190","n248":"161,200,31","n249":"194,168,199","n250":"170,183,100","n251":"227,157,191","n252":"161,217,235","n253":"207,155,112","n254":"160,199,30","n255":"154,207,189","n256":"194,167,199","n257":"239,144,139","n258":"237,231,8","n259":"226,159,191","n260":"238,144,138","n261":"161,201,30","n262":"155,208,190","n263":"235,231,7","n264":"194,168,200","n265":"237,147,178","n266":"238,152,10","n267":"247,192,7","n268":"238,144,138","n269":"161,217,235","n270":"154,208,188","n271":"170,182,99","n272":"238,144,139","n273":"239,151,9","n274":"208,156,111","n275":"247,192,7","n276":"162,200,32","n277":"154,208,189","n278":"207,155,112","n279":"168,181,99","n280":"162,217,235","n281":"195,169,200","n282":"160,200,31","n283":"228,160,190","n284":"154,208,189","n285":"236,147,178","n286":"208,155,112","n287":"236,230,7","n288":"228,159,192","n289":"208,157,113","n290":"162,217,235","n291":"234,230,7","n292":"239,143,138","n293":"229,160,191","n294":"245,191,7","n295":"195,168,200","n296":"228,159,190","n297":"162,217,235","n298":"247,191,6","n299":"207,155,112","n300":"160,202,30","n301":"24,165,149","n302":"152,93,162","n303":"179,205,48","n304":"232,128,15","n305":"26,169,71","n306":"233,130,20","n307":"180,206,46","n308":"151,93,162","n309":"218,22,57","n310":"231,129,17","n311":"25,168,70","n312":"225,69,27","n313":"220,61,132","n314":"231,130,19","n315":"151,92,161","n316":"222,62,133","n317":"238,152,10","n318":"207,155,111","n319":"159,199,28","n320":"162,218,236","n321":"236,230,7","n322":"228,159,192","n323":"169,182,99","n324":"245,191,6","n325":"154,208,189","n326":"162,218,235","n327":"207,155,112","n328":"162,200,33","n329":"235,231,9","n330":"162,218,236","n331":"238,151,9","n332":"154,208,188","n333":"239,145,140","n334":"227,159,190","n335":"236,147,179","n336":"237,153,15","n337":"235,230,8","n338":"154,208,189","n339":"162,218,236","n340":"195,168,201","n341":"240,145,141","n342":"227,159,191","n343":"207,154,112","n344":"154,209,189","n345":"236,147,179","n346":"160,200,31","n347":"162,218,236","n348":"169,182,99","n349":"245,192,9","n350":"195,168,201","n351":"239,151,10","n352":"227,159,191","n353":"239,144,141","n354":"167,180,98","n355":"162,218,236","n356":"239,145,139","n357":"206,155,112","n358":"239,152,10","n359":"194,168,200","n360":"226,158,190","n361":"247,191,7","n362":"162,217,234","n363":"238,144,139","n364":"236,147,178","n365":"247,192,7","n366":"207,156,112","n367":"154,208,189","n368":"162,218,235","n369":"167,181,98","n370":"162,218,236","n371":"246,192,7","n372":"237,145,178","n373":"206,156,112","n374":"167,180,99","n375":"154,208,190","n376":"239,153,10","n377":"248,191,7","n378":"236,147,178","n379":"162,218,235","n380":"168,181,99","n381":"228,158,192","n382":"235,230,7","n383":"194,167,199","n384":"206,155,112","n385":"237,231,8","n386":"237,146,178","n387":"162,201,33","n388":"238,144,139","n389":"247,192,7","n390":"227,159,190","n391":"169,181,99","n392":"194,167,199","n393":"207,155,111","n394":"227,159,190","n395":"159,200,29","n396":"239,151,9","n397":"235,230,7","n398":"169,182,99","n399":"162,218,236","n400":"156,208,190","n401":"238,144,15","n402":"236,144,17","n403":"49,168,162","n404":"160,115,170","n405":"41,179,217","n406":"159,116,169","n407":"54,170,70","n408":"239,146,17","n409":"183,208,62","n410":"184,208,62","n411":"55,172,69","n412":"225,74,142","n413":"127,147,83","n414":"225,40,71","n415":"43,166,160","n416":"184,207,63","n417":"202,120,171","n418":"237,145,15","n419":"224,74,142","n420":"54,170,68","n421":"230,93,24","n422":"161,121,110","n423":"237,145,16","n424":"48,169,162","n425":"238,148,6","n426":"234,140,173","n427":"233,140,174","n428":"150,194,28","n429":"247,185,5","n430":"234,140,173","n431":"194,170,205","n432":"247,185,6","n433":"165,179,99","n434":"151,195,29","n435":"226,163,193","n436":"226,227,34","n437":"152,212,227","n438":"194,170,206","n439":"231,138,134","n440":"201,161,119","n441":"237,148,7","n442":"201,161,118","n443":"228,163,193","n444":"150,195,28","n445":"225,226,34","n446":"143,205,188","n447":"166,179,102","n448":"233,138,135","p001":"125,200,237","p002":"123,200,236","p003":"124,201,237","p004":"126,199,237","p005":"125,200,235","p006":"126,197,236","p007":"126,200,238","p008":"126,200,237","p009":"127,200,238","p010":"123,198,236","p011":"126,197,236","p012":"123,199,236","p013":"126,199,238","p014":"126,201,237","p015":"125,200,238","p016":"124,202,237","p017":"124,199,236","p018":"122,197,235","p019":"125,200,235","p020":"124,201,238","p021":"124,200,237","p022":"125,199,238","p023":"126,199,235","p024":"128,199,234","p025":"128,199,236","p026":"128,200,237","p027":"126,201,238","p028":"125,200,236","p029":"126,199,237","p030":"125,200,236","p031":"127,197,236","p032":"126,198,237","p033":"124,201,236","p034":"125,199,238","p035":"125,200,235","p036":"126,200,238","p037":"125,199,235","p038":"124,198,235","p039":"128,201,237","p040":"126,200,238","p041":"125,201,238","p042":"124,200,236","p043":"121,199,235","p044":"122,197,237","p045":"130,201,237","p046":"131,200,236","p047":"123,200,238","p048":"124,200,237","p049":"130,199,236","p050":"124,198,235","z1":"129,200,237","z2":"132,201,237","z3":"127,199,236","z4":"129,201,237","z5":"131,200,235","z6":"130,200,235"};
+
+  /* Card numbers and names follow Nintendo's official amiibo card list (JP). */
+  var DATA = [
+    ['s1', '第1弾', `001 しずえ
+002 たぬきち
+003 DJ K.K
+004 あさみ
+005 かっぺい
+006 リセットさん
+007 カブリバ
+008 まめきち
+009 ケント
+010 ラコスケ
+011 カットリーヌ
+012 つねきち
+013 ローラン
+014 ゆめみ
+015 コトブキ
+016 ホンマさん
+017 タクミ
+018 ニコバン
+019 ドレミ
+020 ガンテツ
+021 ブレンダ
+022 ヒョウタ
+023 アセロラ
+024 リカルド
+025 たもつ
+026 おさい
+027 トムソン
+028 エスメラルダ
+029 グレオ
+030 バズレー
+031 クリス
+032 グルミン
+033 ピータン
+034 キャビア
+035 デリー
+036 クロコ
+037 かぶきち
+038 カルピ
+039 ジーニョ
+040 リンダ
+041 タックン
+042 マリア
+043 ホッケー
+044 シェリー
+045 おくたろう
+046 マキバスター
+047 キンカク
+048 ギンカク
+049 ミミィ
+050 ピンタ
+051 オパール
+052 グミ
+053 らっきょ
+054 まりも
+055 モモチ
+056 ルーズ
+057 ケイン
+058 ジェーン
+059 バッカス
+060 ピース
+061 れんにゅう
+062 ボルシチ
+063 ミント
+064 きんぞう
+065 うずまき
+066 ビリー
+067 ゆきみ
+068 デースケ
+069 イザベラ
+070 ガブリエル
+071 ユーカリ
+072 ライオネル
+073 レイラ
+074 ハカセ
+075 アンデス
+076 クワトロ
+077 ハンナ
+078 シュバルツ
+079 トンコ
+080 ロッキー
+081 モヘア
+082 ケンタ
+083 みやび
+084 ハチ
+085 ブリトニー
+086 チーフ
+087 リリアン
+088 どぐろう
+089 ナタリー
+090 エックスエル
+091 フリル
+092 ヘンリー
+093 あんこ
+094 さくらじま
+095 ももこ
+096 アマミン
+097 マリー
+098 ペンタ
+099 カモミ
+100 ベン`],
+    ['s2', '第2弾', `101 とたけけ
+102 リサ
+103 シャンク
+104 ケイト
+105 おまわりさんA
+106 おまわりさんB
+107 まいこちゃん
+108 つぶきち
+109 えきいんさん
+110 クク
+111 ししょー
+112 ラケットさん
+113 しずえ
+114 あやしいネコ
+115 カメヤマさん
+116 うおまさ
+117 パンプキング
+118 ポンチョ
+119 みかっち
+120 ドングリ
+121 ティーナ
+122 マスカラス
+123 ジェシカ
+124 オリバー
+125 ポーラ
+126 テッチャン
+127 アップリケ
+128 バンタム
+129 まきば
+130 カール
+131 ナッキー
+132 ガビ
+133 サバンナ
+134 やさお
+135 ヒノコ
+136 しもやけ
+137 ペリーヌ
+138 ハイド
+139 シルエット
+140 クスケチャ
+141 チッチ
+142 ふみたろう
+143 オリビア
+144 アラン
+145 チョコ
+146 ジミー
+147 マモル
+148 ビアンカ
+149 ブロッコリー
+150 やよい
+151 クロー
+152 みぞれ
+153 アルベルト
+154 ユメコ
+155 ジョン
+156 ペチカ
+157 ピン
+158 つかさ
+159 ネルソン
+160 ジャスミン
+161 たいへいた
+162 アザラク
+163 キザノホマレ
+164 コユキ
+165 リッキー
+166 ショコラ
+167 ペーター
+168 スミ
+169 グラさん
+170 ルナ
+171 ぺしみち
+172 アグネス
+173 ジュリー
+174 マルコ
+175 ツバクロ
+176 フラッペ
+177 さすけ
+178 クッチャネ
+179 ダルマン
+180 レベッカ
+181 フォアグラ
+182 メルボルン
+183 フルメタル
+184 ラザニア
+185 トンファン
+186 チャーミー
+187 ノルマン
+188 ナイル
+189 ドク
+190 メリヤス
+191 もんじゃ
+192 パトラ
+193 フランク
+194 ちとせ
+195 ハムジ
+196 ツンドラ
+197 1ごう
+198 2ごう
+199 3ごう
+200 4ごう`],
+    ['s3', '第3弾', `201 みしらぬネコ
+202 フータ
+203 たぬきち
+204 ぺりこ
+205 ぺりみ
+206 ぺりお
+207 きぬよ
+208 レイジ
+209 セイイチ
+210 カイゾー
+211 ゲコ
+212 まめきち
+213 ケント
+214 ラケットさん
+215 しずえ
+216 フランクリン
+217 ジングル
+218 レイニー
+219 アンチョビ
+220 トラこ
+221 アイダホ
+222 ミランダ
+223 ヤマト
+224 レイチェル
+225 クロベエ
+226 マール
+227 ロデオ
+228 チャコ
+229 ハルマキ
+230 ピティエ
+231 キング
+232 キャンベラ
+233 アンソニー
+234 タコリーナ
+235 ポーク
+236 マグロ
+237 タケル
+238 サブリナ
+239 カジロウ
+240 ナディア
+241 スナイル
+242 ユキ
+243 タツオ
+244 ヒャクパー
+245 チャンプ
+246 エレフィン
+247 サム
+248 アイリス
+249 ベアード
+250 ドミグラ
+251 パンタ
+252 さっち
+253 ゲンジ
+254 ふくこ
+255 ロボ
+256 アイーダ
+257 クマロス
+258 バニラ
+259 アセクサ
+260 エイプリル
+261 はじめ
+262 しのぶ
+263 モサキチ
+264 ジュン
+265 ためこ
+266 リチャード
+267 ロッタ
+268 ヴァヤシコフ
+269 サラ
+270 マイク
+271 カルロス
+272 リリィ
+273 ジンペイ
+274 フララ
+275 ハムスケ
+276 キッズ
+277 サルモンティ
+278 とめ
+279 ロビン
+280 セントアロー
+281 オズモンド
+282 ウズメ
+283 ハルク
+284 チーズ
+285 パティ
+286 ビス
+287 マリリン
+288 ハムカツ
+289 ショーイ
+290 キャロライン
+291 ちゅんのすけ
+292 トロワ
+293 チョモラン
+294 メープル
+295 マコト
+296 シャンティ
+297 アポロ
+298 ボン
+299 フランソワ
+300 クリスチーヌ`],
+    ['s4', '第4弾', `301 しずえ
+302 マスター
+303 ハッケミィ
+304 パロンチーノ
+305 フーコ
+306 つぶきち
+307 グレース
+308 クーコ
+309 リセットさん
+310 まめきち
+311 タクミ
+312 ししょー
+313 ベルリーナ
+314 ジョニー
+315 つねきち
+316 ぴょんたろう
+317 キャラメル
+318 パッチ
+319 タンタン
+320 リック
+321 スミモモ
+322 ゴンザレス
+323 ちょい
+324 グラハム
+325 ドサコ
+326 ヒュージ
+327 チューこ
+328 まんたろう
+329 カサンドラ
+330 タイシ
+331 バーバラ
+332 ボブ
+333 ラムネ
+334 チャック
+335 マーサ
+336 セバスチャン
+337 タキュ
+338 シベリア
+339 ウェンディ
+340 ボルト
+341 アデレード
+342 トミ
+343 あるみ
+344 チャス
+345 ハナコ
+346 ダンベル
+347 アネッサ
+348 アントニオ
+349 ルーシー
+350 サブレ
+351 チョキ
+352 アーサー
+353 モンこ
+354 カンロク
+355 ミラコ
+356 ジュペッティ
+357 オーロラ
+358 オカッピ
+359 アップル
+360 ジャン
+361 たま
+362 スパーク
+363 ティファニー
+364 タコヤ
+365 ちえり
+366 ガチャ
+367 シルブプレ
+368 チャウヤン
+369 シルビア
+370 ジョッキー
+371 ララミー
+372 トビオ
+373 のりっぺ
+374 くるぶし
+375 アリア
+376 ちょろきち
+377 シドニー
+378 ニッシー
+379 ガリガリ
+380 イノッチ
+381 スワンソン
+382 ブンジロウ
+383 ディビッド
+384 サリー
+385 ラッキー
+386 ブーケ
+387 ゴメス
+388 アンヌ
+389 ブルース
+390 サントス
+391 アリゲッティ
+392 トキオ
+393 コージィ
+394 ムー
+395 パセリ
+396 エテキチ
+397 のりまき
+398 セルバンテス
+399 ピーチク
+400 パーチク`],
+    ['s5', '第5弾', `401 たぬきち
+402 まめきち＆つぶきち
+403 しずえ
+404 モーリー
+405 ロドリー
+406 フータ
+407 フーコ
+408 きぬよ
+409 あさみ
+410 ことの
+411 とたけけ
+412 ジャスティン
+413 レックス
+414 ウリ
+415 シャンク
+416 ローラン
+417 パニエル
+418 ジョニー
+419 ゆうたろう
+420 タクミ
+421 ニコ
+422 ナッティー
+423 たぬきち
+424 しずえ
+425 レム
+426 キャンディ
+427 ちゃちゃまる
+428 モニカ
+429 パンクス
+430 みすず
+431 ジャック
+432 リアーナ
+433 ミッチェル
+434 スピカ
+435 テンシン
+436 よしの
+437 ドンチャン
+438 リカ
+439 ギーガー
+440 シオン
+441 のぶお
+442 ビーフン
+443 フェザー
+444 デジャネイロ
+445 シャンペン
+446 ペチュニア
+447 ピロンコン
+448 マーチ`],
+    ['plus', 'amiibo+', `001 ヴァネッサ
+002 プースケ
+003 メイ
+004 レイコ
+005 パオロ
+006 みつお
+007 アクリル
+008 ハリマオ
+009 ストロー
+010 もんぺ
+011 ダリー
+012 カマボコ
+013 マミィ
+014 ケチャップ
+015 サンデー
+016 モーリス
+017 ネーヤ
+018 ジャコテン
+019 マロン
+020 アーシンド
+021 ボイド
+022 エーミー
+023 マーガレット
+024 のりお
+025 パタヤ
+026 ラン
+027 ビネガー
+028 カックン
+029 ジュリア
+030 マッスル
+031 ベーグル
+032 イッテツ
+033 エクレア
+034 ホウサク
+035 アチョット
+036 かんゆ
+037 ティーチャー
+038 スクワット
+039 ラムール
+040 タンボ
+041 いさこ
+042 ゴンゾー
+043 ヘルツ
+044 こまち
+045 ピッコロ
+046 けん
+047 ひでよし
+048 アイソトープ
+049 ダイク
+050 ナターシャ`],
+    ['sanrio', 'サンリオコラボ', `001 リラ
+002 マーティー
+003 エトワール
+004 フィーカ
+005 チェルシー
+006 トビー`]
+  ];
+
+  function parseCards(id, raw) {
+    return raw.split('\n').map(function (line) {
+      var m = /^(\d{3})\s+(.+)$/.exec(line.trim());
+      if (!m) return null;
+      if (id === 'plus') return { id: 'p' + m[1], no: '+' + m[1], name: m[2] };
+      if (id === 'sanrio') return { id: 'z' + Number(m[1]), no: 's' + Number(m[1]), name: m[2] };
+      return { id: 'n' + m[1], no: m[1], name: m[2] };
+    }).filter(Boolean);
+  }
+  function sortLists(s) {
+    var order = {};
+    DATA.forEach(function (d, i) { order[d[0]] = i; });
+    s.lists = s.lists.map(function (x, i) { return { x: x, k: (order[x.id] === undefined ? 99 : order[x.id]) * 1000 + i }; })
+      .sort(function (a, b) { return a.k - b.k; }).map(function (o) { return o.x; });
+  }
+  function defaultState() {
+    return {
+      v: 2, updatedAt: 0, active: 's1', owned: {}, imgs: {},
+      lists: DATA.map(function (d) { return { id: d[0], name: d[1], cards: parseCards(d[0], d[2]) }; })
+    };
+  }
+  /* v1 kept only 第5弾 in screenshot order (レム…マーチ, then たぬきち…). Map those ids to card numbers. */
+  function normalize(s) {
+    if (!s || !Array.isArray(s.lists) || !s.lists.length) return defaultState();
+    if (s.v !== 2) {
+      var d = defaultState();
+      Object.keys(s.owned || {}).forEach(function (k) {
+        var m = /^s5-(\d\d)$/.exec(k);
+        if (m) { var i = Number(m[1]) - 1; d.owned['n' + (i < 24 ? 425 + i : 401 + (i - 24))] = s.owned[k]; }
+      });
+      d.updatedAt = Date.now();
+      return d;
+    }
+    s.owned = s.owned && typeof s.owned === 'object' ? s.owned : {};
+    s.imgs = s.imgs && typeof s.imgs === 'object' ? s.imgs : {};
+    s.updatedAt = Number(s.updatedAt) || 0;
+    DATA.forEach(function (d) {
+      if (!s.lists.some(function (l) { return l.id === d[0]; })) s.lists.push({ id: d[0], name: d[1], cards: parseCards(d[0], d[2]) });
+    });
+    sortLists(s);
+    if (s.active !== 'all' && !s.lists.some(function (l) { return l.id === s.active; })) s.active = s.lists[0].id;
+    return s;
+  }
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+  function loadLocal() {
+    try {
+      var raw = localStorage.getItem(KEY) || localStorage.getItem(OLD_KEY);
+      if (raw) return normalize(JSON.parse(raw));
+    } catch (e) {}
+    return defaultState();
+  }
+  function saveLocal() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+
+  var state = loadLocal();
+  var filter = 'all', query = '', panel = null;
+  
+
+  function $(s) { return document.querySelector(s); }
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function uid() { return Math.random().toString(36).slice(2, 9); }
+  function allCards() { var out = []; state.lists.forEach(function (l) { out = out.concat(l.cards); }); return out; }
+  function cur() {
+    if (state.active === 'all') return { id: 'all', name: 'すべて', cards: allCards(), virtual: true };
+    return state.lists.filter(function (l) { return l.id === state.active; })[0] || state.lists[0];
+  }
+  function stats(l) {
+    var own = 0, spare = 0;
+    l.cards.forEach(function (c) { var n = state.owned[c.id] || 0; if (n > 0) { own++; spare += n - 1; } });
+    return { own: own, total: l.cards.length, spare: spare };
+  }
+  function say(t) { $('#toast').textContent = t || ''; }
+
+  /* ---------- persistence ---------- */
+  /* Everything stays in this browser: checklist state in localStorage, card pictures in IndexedDB. Nothing is sent anywhere. */
+  var urls = {}, idb = null;
+  function openDb() {
+    return new Promise(function (res) {
+      try {
+        var rq = indexedDB.open('amiibo-imgs', 1);
+        rq.onupgradeneeded = function () { rq.result.createObjectStore('imgs'); };
+        rq.onsuccess = function () { idb = rq.result; res(idb); };
+        rq.onerror = function () { res(null); };
+      } catch (e) { res(null); }
+    });
+  }
+  /* pictures are shown from data: addresses, which every page setting allows (blob: addresses are sometimes blocked) */
+  function toDataUrl(blob) {
+    return new Promise(function (res, rej) {
+      var fr = new FileReader();
+      fr.onload = function () { res(fr.result); };
+      fr.onerror = function () { rej(fr.error); };
+      fr.readAsDataURL(blob);
+    });
+  }
+  function idbPut(id, blob) {
+    return new Promise(function (res) {
+      if (!idb) return res(false);
+      try {
+        var tx = idb.transaction('imgs', 'readwrite');
+        tx.objectStore('imgs').put(blob, id);
+        tx.oncomplete = function () { res(true); };
+        tx.onerror = tx.onabort = function () { res(false); };
+      } catch (e) { res(false); }
+    });
+  }
+  function idbLoadAll() {
+    return new Promise(function (res) {
+      if (!idb) return res();
+      var jobs = [];
+      try {
+        var rq = idb.transaction('imgs').objectStore('imgs').openCursor();
+        rq.onsuccess = function () {
+          var cur = rq.result;
+          if (cur) { (function (k, v) { jobs.push(toDataUrl(v).then(function (u) { urls[k] = u; })); })(cur.key, cur.value); cur.continue(); }
+          else Promise.all(jobs).then(function () { res(); });
+        };
+        rq.onerror = function () { res(); };
+      } catch (e) { res(); }
+    });
+  }
+  var dbg = { saved: 0, failed: 0 };
+  function showDbg() {
+    var n = 0, k;
+    for (k in urls) n++;
+    var el = document.getElementById('syncMsg');
+    if (el) el.textContent = '所持チェックと画像は、このブラウザの中だけに保存されます（画像 ' + n + '枚を表示中' + (idb ? '' : '／この画面では画像を端末に残せません') + (dbg.failed ? '／保存できなかった画像 ' + dbg.failed + '枚' : '') + '）';
+  }
+  var assetsApi = {
+    upload: function (blob) {
+      var id = 'i' + Date.now().toString(36) + uid();
+      return toDataUrl(blob).then(function (u) {
+        urls[id] = u;
+        /* do not make the caller wait for the browser's data store */
+        Promise.race([idbPut(id, blob), new Promise(function (r) { setTimeout(function () { r(false); }, 4000); })]).then(function (ok) { dbg.saved += ok ? 1 : 0; dbg.failed += ok ? 0 : 1; showDbg(); });
+        return { id: id };
+      });
+    }
+  };
+  function commit() {
+    state.updatedAt = Date.now();
+    saveLocal();
+    refresh();
+  }
+  function setSync() {}
+  function initLocal() {
+    try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
+    openDb().then(idbLoadAll).then(function () { renderGrid(); showDbg(); });
+  }
+  function downloadBackup() {
+    var out = { app: 'amiibo-card-check', v: 2, updatedAt: Date.now(), owned: state.owned, lists: state.lists, active: state.active };
+    var blob = new Blob([JSON.stringify(out)], { type: 'application/json' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    var d = new Date();
+    a.download = 'amiibo-backup-' + d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0') + '.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    say('保存しました');
+  }
+  function loadBackup() {
+    var inp = document.createElement('input');
+    inp.type = 'file'; inp.accept = 'application/json,.json';
+    inp.onchange = function () {
+      var f = inp.files && inp.files[0];
+      if (!f) return;
+      f.text().then(function (txt) {
+        var d = JSON.parse(txt);
+        if (!d || d.app !== 'amiibo-card-check' || !d.owned || !d.lists) throw new Error('bad');
+        var imgs = state.imgs;
+        state = normalize({ v: 2, updatedAt: Date.now(), active: d.active, owned: d.owned, imgs: imgs, lists: d.lists });
+        saveLocal(); render(); say('読み込みました');
+      }).catch(function () { say('読み込めませんでした。このページで保存したバックアップファイルを選んでください。'); });
+    };
+    inp.click();
+  }
+
+  /* ---------- rendering ---------- */
+  var FILTERS = [['all', 'すべて'], ['miss', '未所持'], ['own', '所持'], ['spare', 'ダブり']];
+  function renderHead() {
+    var l = cur(), s = stats(l);
+    var pct = s.total ? Math.round(s.own / s.total * 100) : 0;
+    $('#pct').textContent = pct;
+    $('#barfill').style.width = pct + '%';
+    $('#bar').setAttribute('aria-valuenow', pct);
+    $('#count').innerHTML = s.own + ' / ' + s.total + '種' + (s.spare ? '<span>ダブり ' + s.spare + '枚</span>' : '');
+    $('#listName').textContent = 'どうぶつの森 amiiboカード　' + l.name + (s.total && s.own === s.total ? '　コンプリート' : '');
+  }
+  function renderTabs() {
+    var tabs = [{ id: 'all', name: 'すべて' }].concat(state.lists);
+    $('#tabs').innerHTML = tabs.map(function (l) {
+      return '<button class="tab" role="tab" type="button" data-act="tab" data-id="' + esc(l.id) + '" aria-selected="' + (l.id === state.active) + '">' + esc(l.name) + '</button>';
+    }).join('');
+  }
+  function renderFilters() {
+    $('#filters').innerHTML = FILTERS.map(function (f) {
+      return '<button type="button" data-act="filter" data-v="' + f[0] + '" aria-pressed="' + (filter === f[0]) + '">' + f[1] + '</button>';
+    }).join('');
+  }
+  function renderGrid() {
+    var l = cur(), editing = panel === 'edit', q = query.trim().toLowerCase();
+    $('#grid').className = 'grid' + (editing ? ' editing' : '') + ((state.active === 'sanrio' || state.active === 'plus') ? ' land' : '');
+    if (!l.cards.length) { $('#grid').innerHTML = '<p class="empty">カードがありません。「編集・画像」から追加できます。</p>'; return; }
+    var html = l.cards.map(function (c, i) {
+      var n = state.owned[c.id] || 0;
+      if (filter === 'miss' && n > 0) return '';
+      if (filter === 'own' && n < 1) return '';
+      if (filter === 'spare' && n < 2) return '';
+      if (q && c.name.toLowerCase().indexOf(q) < 0 && (c.no || '').indexOf(q) < 0) return '';
+      var h = (i * 47 + 150) % 360;
+      var glyph = Array.from(c.name)[0] || '？';
+      var img = urls[state.imgs[c.id]] ? '<img src="' + urls[state.imgs[c.id]] + '" alt="" loading="lazy" decoding="async">' : '';
+      var extra = '';
+      if (editing) {
+        if (assetsApi) extra += '<button class="imgbtn" type="button" data-act="img" data-id="' + esc(c.id) + '" aria-label="' + esc(c.name) + 'の画像を設定">' + (img ? '変更' : '画像') + '</button>';
+      } else if (n > 0) {
+        extra = '<button class="spare' + (n > 1 ? ' on' : '') + '" type="button" data-act="spare" data-id="' + esc(c.id) + '" aria-label="' + esc(c.name) + 'のダブり枚数 ' + (n - 1) + '">' + (n > 1 ? '×' + (n - 1) : '＋') + '</button>';
+      }
+      var cc = COLS[c.id];
+      return '<div class="tile' + (cc ? ' cc' : '') + '" data-own="' + (n > 0 ? 1 : 0) + '" style="--h:' + h + (cc ? ';--cc:' + cc : '') + '">' +
+        '<button class="tile-main" type="button" data-act="toggle" data-id="' + esc(c.id) + '" aria-pressed="' + (n > 0) + '"' + (editing ? ' disabled' : '') + '>' +
+        '<span class="art">' + (img || '<b aria-hidden="true">' + esc(glyph) + '</b>') + (c.no ? '<span class="no">' + c.no + '</span>' : '') + '</span>' +
+        '<span class="nm">' + esc(c.name) + '</span></button>' +
+        '<span class="chk" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg></span>' + extra + '</div>';
+    }).join('');
+    $('#grid').innerHTML = html || '<p class="empty">該当するカードはありません。</p>';
+  }
+  function memoText() {
+    var l = cur(), give = [], want = [];
+    l.cards.forEach(function (c) {
+      var n = state.owned[c.id] || 0, label = (c.no ? c.no + ' ' : '') + c.name;
+      if (n > 1) give.push(label + (n > 2 ? '×' + (n - 1) : ''));
+      if (n === 0) want.push(label);
+    });
+    return 'どうぶつの森 amiiboカード（' + l.name + '）\n【譲】' + (give.join('、') || 'なし') + '\n【求】' + (want.join('、') || 'なし');
+  }
+  function renderPanel() {
+    var el = $('#panel'), l = cur();
+    $('#btnEdit').textContent = assetsApi ? '編集・画像' : '編集';
+    ['Memo', 'Add', 'Edit', 'Backup'].forEach(function (k) { $('#btn' + k).setAttribute('aria-pressed', String(panel === k.toLowerCase())); });
+    if (panel === 'memo') {
+      el.innerHTML = '<section class="panel"><h2>交換メモ<small>' + esc(l.name) + '</small></h2>' +
+        '<label for="memoText">譲はダブり、求は未所持のカードです</label>' +
+        '<textarea id="memoText" rows="6" readonly>' + esc(memoText()) + '</textarea>' +
+        '<div class="row"><button class="btn primary" type="button" data-act="copy">コピーする</button><span class="msg" id="copyMsg" role="status"></span></div></section>';
+    } else if (panel === 'add') {
+      el.innerHTML = '<section class="panel"><h2>弾を追加</h2>' +
+        '<label for="newListName">名前</label><input id="newListName" placeholder="例：サンリオコラボ" maxlength="30">' +
+        '<label for="newListCards">カード名（1行に1枚、またはカンマ区切り）</label>' +
+        '<textarea id="newListCards" rows="6" placeholder="名前を貼り付けできます"></textarea>' +
+        '<div class="row"><button class="btn primary" type="button" data-act="addList">追加する</button><span class="msg" id="addMsg" role="status"></span></div></section>';
+    } else if (panel === 'edit') {
+      var html = '<section class="panel"><h2>' + esc(l.name) + 'を編集</h2>';
+      if (assetsApi) {
+        html += '<label>カード画像</label>' +
+          '<div class="row"><button class="btn primary" type="button" data-act="shot">スクショから取り込む</button><button class="btn" type="button" data-act="imgBulk">番号付きファイルをまとめて追加</button></div>' +
+          '<p class="hint" style="margin:0">任天堂の公式一覧を2列のまま縦にスクショして選ぶと、全体が見えているカードだけを順に切り出します。1枚ずつは各カードの「画像」から設定できます。</p>' + shotHtml();
+      }
+      if (!l.virtual) {
+        html += '<label for="newCardName">カードを追加</label>' +
+          '<div class="row"><input id="newCardName" placeholder="カード名" maxlength="30"><button class="btn primary" type="button" data-act="addCard">追加</button></div>' +
+          '';
+      } else {
+        html += '<p class="hint" style="margin:0">カードの追加・削除は、各弾のタブで行います。</p>';
+      }
+      el.innerHTML = html + restoreHtml() + '</section>';
+    } else if (panel === 'backup') {
+      el.innerHTML = '<section class="panel"><h2>バックアップ</h2>' +
+        '<p class="hint" style="margin:0">所持チェックとダブり枚数を、ファイルに保存・読み込みできます。画像は含まれません（機種変更のときは、画像だけスクショから入れ直しになります）。</p>' +
+        '<div class="row"><button class="btn primary" type="button" data-act="backupSave">ファイルに保存</button><button class="btn" type="button" data-act="backupLoad">ファイルから読み込む</button></div></section>';
+    } else {
+      el.innerHTML = '';
+    }
+  }
+  function refresh() { renderHead(); renderTabs(); renderGrid(); if (panel === 'memo') renderPanel(); }
+  function render() { renderFilters(); refresh(); renderPanel(); }
+
+  /* ---------- images ---------- */
+  function resizeToBlob(file) {
+    return createImageBitmap(file).then(function (bmp) {
+      var sc = Math.min(1, 260 / bmp.width), w = Math.round(bmp.width * sc), h = Math.round(bmp.height * sc);
+      var cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+      cv.getContext('2d').drawImage(bmp, 0, 0, w, h);
+      return new Promise(function (res, rej) { cv.toBlob(function (b) { b ? res(b) : rej(new Error('blob')); }, 'image/jpeg', 0.85); });
+    });
+  }
+  function runUploads(jobs) {
+    var valid = {}, ok = 0, skip = 0, i = 0;
+    allCards().forEach(function (c) { valid[c.id] = 1; });
+    function next() {
+      if (i >= jobs.length) {
+        say(ok + '枚追加しました' + (skip ? '（' + skip + '枚は番号が合わず登録できませんでした）' : ''));
+        if (ok) commit();
+        return;
+      }
+      var j = jobs[i++];
+      if (!j.id || !valid[j.id]) { skip++; return next(); }
+      say(i + ' / ' + jobs.length + ' 枚を処理中…');
+      resizeToBlob(j.f).then(function (b) { return assetsApi.upload(b); }).then(function (r) { state.imgs[j.id] = r.id; ok++; }).catch(function () { skip++; }).then(next);
+    }
+    next();
+  }
+  function pickImages(multi, id) {
+    if (!assetsApi) return;
+    var inp = document.createElement('input');
+    inp.type = 'file'; inp.accept = 'image/*'; inp.multiple = !!multi;
+    inp.onchange = function () {
+      var files = Array.prototype.slice.call(inp.files || []);
+      runUploads(files.map(function (f) {
+        var cid = id;
+        if (!cid) { var m = /(\d{3})/.exec(f.name); cid = m ? 'n' + m[1] : null; }
+        return { f: f, id: cid };
+      }));
+    };
+    inp.click();
+  }
+
+  /* ---------- restore deleted cards ---------- */
+  function missingPreset() {
+    var out = { cards: [], lists: [] };
+    DATA.forEach(function (d) {
+      var l = state.lists.filter(function (x) { return x.id === d[0]; })[0];
+      var all = parseCards(d[0], d[2]);
+      if (!l) { out.lists.push({ id: d[0], name: d[1], n: all.length }); return; }
+      var have = {};
+      l.cards.forEach(function (c) { have[c.id] = 1; });
+      all.forEach(function (c) { if (!have[c.id]) out.cards.push({ listId: d[0], card: c }); });
+    });
+    return out;
+  }
+  function insertCard(list, card) {
+    var n = Number(card.no), i = 0;
+    for (; i < list.cards.length; i++) {
+      var m = list.cards[i].no ? Number(list.cards[i].no) : Infinity;
+      if (m > n) break;
+    }
+    list.cards.splice(i, 0, { id: card.id, no: card.no, name: card.name });
+  }
+  function restoreList(id) {
+    var d = DATA.filter(function (x) { return x[0] === id; })[0];
+    if (!d || state.lists.some(function (x) { return x.id === id; })) return;
+    state.lists.push({ id: d[0], name: d[1], cards: parseCards(d[0], d[2]) });
+    sortLists(state);
+  }
+  function restoreHtml() {
+    var m = missingPreset();
+    if (!m.cards.length && !m.lists.length) return '';
+    var html = '<label>削除したカードを戻す</label><div class="row">';
+    m.lists.forEach(function (l) {
+      html += '<button class="btn" type="button" data-act="restoreList" data-id="' + l.id + '">' + esc(l.name) + '（' + l.n + '枚）を戻す</button>';
+    });
+    if (m.cards.length <= 24) {
+      m.cards.forEach(function (e) {
+        html += '<button class="btn" type="button" data-act="restore" data-id="' + esc(e.card.id) + '">' + esc(e.card.no + ' ' + e.card.name) + '</button>';
+      });
+    }
+    if (m.cards.length > 1) html += '<button class="btn primary" type="button" data-act="restoreAll">削除した' + m.cards.length + '枚をすべて戻す</button>';
+    return html + '</div><p class="hint" style="margin:0">戻したカードの「持っている」の記録と画像は、削除したときに消えています。</p>';
+  }
+
+  /* ---------- screenshot import ---------- */
+  var shot = null;
+  function pad3(n) { return ('00' + n).slice(-3); }
+  /* Finds fully visible card pictures in a screenshot of the nintendo.com amiibo list (cells framed by thin coloured lines), in reading order.
+     Works with any frame colour and screenshot size. A picture counts when it is not cut off: its proportions match a whole card. */
+  function detectCards(data, W, H, wide) {
+    /* page background colour: median of the left edge */
+    var bg = (function () {
+      var rs = [], gs = [], bs = [];
+      for (var y = 0; y < H; y += 7) { var i = (y * W + 2) * 4; rs.push(data[i]); gs.push(data[i + 1]); bs.push(data[i + 2]); }
+      function med(a) { a.sort(function (p, q) { return p - q; }); return a[a.length >> 1]; }
+      return [med(rs), med(gs), med(bs)];
+    })();
+    /* "inked" = neither white nor the page background */
+    function inked(x, y) {
+      var i = (y * W + x) * 4, r = data[i], g = data[i + 1], b = data[i + 2];
+      if (765 - r - g - b <= 60) return false;
+      return Math.abs(r - bg[0]) + Math.abs(g - bg[1]) + Math.abs(b - bg[2]) > 60;
+    }
+    function clusters(flags, gap) {
+      var out = [], s = -1, last = -1;
+      for (var k = 0; k < flags.length; k++) {
+        if (!flags[k]) continue;
+        if (s < 0) { s = k; last = k; }
+        else if (k - last <= gap) last = k;
+        else { out.push([s, last]); s = k; last = k; }
+      }
+      if (s >= 0) out.push([s, last]);
+      return out;
+    }
+    /* 1. frame edges: thin, long vertical lines */
+    var vflags = new Array(W).fill(false), x, y;
+    for (x = 0; x < W; x++) {
+      var run = 0, best = 0;
+      for (y = 0; y < H; y++) {
+        if (inked(x, y)) { run++; if (run > best) best = run; } else run = 0;
+      }
+      vflags[x] = best >= H * 0.1;
+    }
+    var maxThin = Math.max(6, W * 0.02);
+    function isWhite(x, y) { var i = (y * W + x) * 4; return 765 - data[i] - data[i + 1] - data[i + 2] <= 60; }
+    function isBg(x, y) {
+      if (isWhite(x, y) || inked(x, y)) return false;
+      return true;
+    }
+    /* a frame's left edge has background outside and white inside; the right edge is the mirror image */
+    function edgeSide(cl) {
+      var xm = (cl[0] + cl[1]) >> 1, ys = [], y;
+      for (y = 0; y < H; y++) if (inked(xm, y)) ys.push(y);
+      if (ys.length < 10) return 0;
+      var l = 0, r = 0, n = Math.min(24, ys.length);
+      for (var s = 0; s < n; s++) {
+        y = ys[Math.floor(s * ys.length / n)];
+        var xa = cl[0] - 4, xb = cl[1] + 4;
+        if (xa < 0 || xb >= W) continue;
+        if (isBg(xa, y) && isWhite(xb, y)) l++;
+        else if (isWhite(xa, y) && isBg(xb, y)) r++;
+      }
+      return l > n * 0.5 ? 1 : r > n * 0.5 ? 2 : 0;
+    }
+    var edges = clusters(vflags, 3).filter(function (c) { return c[1] - c[0] + 1 <= maxThin; }).map(function (c) { return { a: c[0], b: c[1], side: edgeSide(c) }; }).filter(function (e) { return e.side > 0; });
+    var vl = [];
+    for (var e = 0; e + 1 < edges.length; e++) {
+      if (edges[e].side === 1 && edges[e + 1].side === 2) { vl.push([edges[e].a, edges[e].b], [edges[e + 1].a, edges[e + 1].b]); e++; }
+    }
+    if (vl.length < 2) return [];
+    var rects = [];
+    for (var c = 0; c + 1 < vl.length; c += 2) {
+      var xl = vl[c][1] + 2, xr = vl[c + 1][0] - 2;
+      if (xr - xl < W * 0.1) continue;
+      var iw = xr - xl + 1, rows = new Array(H).fill(false);
+      /* 2. rows that are mostly picture (not a full-width frame line) */
+      for (y = 0; y < H; y++) {
+        var cnt = 0;
+        for (x = xl; x <= xr; x++) if (!isWhite(x, y)) cnt++;
+        rows[y] = cnt >= iw * 0.2 && cnt < iw * 0.9;
+      }
+      /* 3. solid blocks with whole-card proportions */
+      y = 0;
+      while (y < H) {
+        if (!rows[y]) { y++; continue; }
+        var y0 = y, y1 = y, miss = 0;
+        for (var k = y + 1; k < H; k++) {
+          if (rows[k]) { y1 = k; miss = 0; } else if (++miss > 6) break;
+        }
+        y = y1 + 1;
+        var minX = 1e9, maxX = -1, yy, xx;
+        for (yy = y0; yy <= y1; yy++) {
+          for (xx = xl; xx <= xr; xx++) {
+            if (!isWhite(xx, yy)) { if (xx < minX) minX = xx; if (xx > maxX) maxX = xx; }
+          }
+        }
+        var w = maxX - minX + 1, h = y1 - y0 + 1, ratio = w / h;
+        if (y0 < 1 || y1 > H - 2 || h < H * 0.05 || (wide ? (ratio < 1.1 || ratio > 1.8) : (ratio < 0.66 || ratio > 0.8))) continue;
+        rects.push({ x: minX, y: y0, w: w, h: h });
+      }
+    }
+    rects.sort(function (a, b) { return Math.abs(a.y - b.y) > 20 ? a.y - b.y : a.x - b.x; });
+    return rects;
+  }
+  function cardLabel(c) { return (c.no ? c.no + ' ' : '') + c.name; }
+  function firstMissingIndex(cards) {
+    for (var i = 0; i < cards.length; i++) if (!state.imgs[cards[i].id]) return i;
+    return 0;
+  }
+  function startShot() {
+    if (!assetsApi) return;
+    var inp = document.createElement('input');
+    inp.type = 'file'; inp.accept = 'image/*';
+    inp.onchange = function () {
+      var f = inp.files && inp.files[0];
+      if (!f) return;
+      say('切り出し中…');
+      createImageBitmap(f).then(function (bmp) {
+        var cv = document.createElement('canvas');
+        cv.width = bmp.width; cv.height = bmp.height;
+        var ctx = cv.getContext('2d');
+        ctx.drawImage(bmp, 0, 0);
+        var d = ctx.getImageData(0, 0, cv.width, cv.height);
+        var rects = detectCards(d.data, cv.width, cv.height, (state.active === 'sanrio' || state.active === 'plus'));
+        if (!rects.length) { shot = null; say('カードを切り出せませんでした（画像 ' + cv.width + '×' + cv.height + '）。任天堂の公式一覧が見えているスクショか確認してください。'); renderPanel(); return; }
+        shot = {
+          start: firstMissingIndex(cur().cards),
+          crops: rects.map(function (r) {
+            var c = document.createElement('canvas');
+            c.width = r.w; c.height = r.h;
+            c.getContext('2d').drawImage(cv, r.x, r.y, r.w, r.h, 0, 0, r.w, r.h);
+            return { canvas: c, thumb: c.toDataURL('image/jpeg', 0.7) };
+          })
+        };
+        say(rects.length + '枚を切り出しました。名前が合っているか確認してください。');
+        renderPanel();
+      }).catch(function () { say('画像を読み込めませんでした。'); });
+    };
+    inp.click();
+  }
+  function shotHtml() {
+    if (!shot) return '';
+    var pool = cur().cards;
+    if (shot.start >= pool.length) shot.start = 0;
+    var tiles = shot.crops.map(function (c, i) {
+      var card = pool[shot.start + i];
+      return '<figure><img src="' + c.thumb + '" alt=""><figcaption>' + (card ? esc(cardLabel(card)) : '対象なし') + '</figcaption></figure>';
+    }).join('');
+    var opts = pool.map(function (c, i) { return '<option value="' + i + '"' + (i === shot.start ? ' selected' : '') + '>' + esc(cardLabel(c)) + '</option>'; }).join('');
+    return '<div class="row"><label for="shotStart">最初のカード</label><select id="shotStart" style="max-width:100%">' + opts + '</select></div>' +
+      '<div class="shotgrid">' + tiles + '</div>' +
+      '<div class="row"><button class="btn primary" type="button" data-act="shotApply">この' + shot.crops.length + '枚を登録</button><button class="btn" type="button" data-act="shotCancel">やめる</button></div>';
+  }
+  function canvasToBlob(src) {
+    var sc = Math.min(1, 260 / src.width), cv = document.createElement('canvas');
+    cv.width = Math.round(src.width * sc); cv.height = Math.round(src.height * sc);
+    cv.getContext('2d').drawImage(src, 0, 0, cv.width, cv.height);
+    return new Promise(function (res, rej) { cv.toBlob(function (b) { b ? res(b) : rej(new Error('blob')); }, 'image/jpeg', 0.85); });
+  }
+  function applyShot() {
+    if (!shot || !assetsApi) return;
+    var pool = cur().cards;
+    var jobs = shot.crops.map(function (c, i) { var card = pool[shot.start + i]; return card ? { canvas: c.canvas, id: card.id } : null; }).filter(Boolean);
+    var ok = 0, k = 0;
+    function next() {
+      if (k >= jobs.length) { shot = null; say(ok + '枚を登録しました'); if (ok) commit(); renderPanel(); return; }
+      var j = jobs[k++];
+      say(k + ' / ' + jobs.length + ' 枚を登録中…');
+      canvasToBlob(j.canvas).then(function (b) { return assetsApi.upload(b); }).then(function (r) { state.imgs[j.id] = r.id; ok++; }).catch(function () {}).then(next);
+    }
+    next();
+  }
+
+  /* ---------- actions ---------- */
+  var armed = null, armTimer = null;
+  function confirmed(btn, key, label) {
+    if (armed && armed.key === key) { clearTimeout(armTimer); armed = null; return true; }
+    if (armed) { clearTimeout(armTimer); armed.btn.textContent = armed.text; }
+    armed = { key: key, btn: btn, text: btn.textContent };
+    btn.textContent = label;
+    armTimer = setTimeout(function () { if (armed && armed.btn) armed.btn.textContent = armed.text; armed = null; }, 3000);
+    return false;
+  }
+  function addCards(list, text) {
+    text.split(/[\n,、，]+/).map(function (s) { return s.trim(); }).filter(Boolean).forEach(function (n) {
+      list.cards.push({ id: 'c-' + uid(), name: n.slice(0, 30) });
+    });
+  }
+
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-act]');
+    if (!t) return;
+    var act = t.getAttribute('data-act'), id = t.getAttribute('data-id'), l = cur();
+    if (act === 'tab') { state.active = id; say(''); renderPanel(); commit(); }
+    else if (act === 'filter') { filter = t.getAttribute('data-v'); renderFilters(); renderGrid(); }
+    else if (act === 'toggle') { if (state.owned[id]) delete state.owned[id]; else state.owned[id] = 1; commit(); }
+    else if (act === 'spare') { var n = state.owned[id] || 0; if (n > 0) { state.owned[id] = n >= 6 ? 1 : n + 1; commit(); } }
+    else if (act === 'allOwn') { l.cards.forEach(function (c) { if (!state.owned[c.id]) state.owned[c.id] = 1; }); commit(); }
+    else if (act === 'allClear') { if (confirmed(t, 'clear', '本当に解除')) { l.cards.forEach(function (c) { delete state.owned[c.id]; }); commit(); } }
+    else if (act === 'panel') { var v = t.getAttribute('data-v'); panel = panel === v ? null : v; say(''); renderPanel(); renderGrid(); }
+    else if (act === 'copy') {
+      var ta = $('#memoText'), msg = $('#copyMsg');
+      var ok = function () { msg.textContent = 'コピーしました'; };
+      var fallback = function () {
+        ta.focus(); ta.select();
+        try { if (document.execCommand('copy')) ok(); else msg.textContent = '選択しました。長押しでコピーしてください'; } catch (err) { msg.textContent = '選択しました。長押しでコピーしてください'; }
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(ta.value).then(ok, fallback); else fallback();
+    }
+    else if (act === 'addList') {
+      var name = $('#newListName').value.trim();
+      if (!name) { $('#addMsg').textContent = '名前を入力してください'; return; }
+      var nl = { id: 'l-' + uid(), name: name.slice(0, 30), cards: [] };
+      addCards(nl, $('#newListCards').value);
+      state.lists.push(nl); state.active = nl.id; panel = nl.cards.length ? null : 'edit';
+      renderPanel(); commit();
+    }
+    else if (act === 'addCard') { addCardFromInput(); }
+    else if (act === 'del') {
+      if (confirmed(t, 'del-' + id, '削除')) {
+        l.cards = l.cards.filter(function (c) { return c.id !== id; }); delete state.owned[id]; delete state.imgs[id];
+        renderPanel(); commit();
+      }
+    }
+    else if (act === 'delList') {
+      if (confirmed(t, 'delList', 'もう一度押すと削除')) {
+        l.cards.forEach(function (c) { delete state.owned[c.id]; delete state.imgs[c.id]; });
+        state.lists = state.lists.filter(function (x) { return x.id !== l.id; });
+        state.active = state.lists.length ? state.lists[0].id : 'all'; panel = null; renderPanel(); commit();
+      }
+    }
+    else if (act === 'restore') {
+      var hit = missingPreset().cards.filter(function (e) { return e.card.id === id; })[0];
+      var tl = hit && state.lists.filter(function (x) { return x.id === hit.listId; })[0];
+      if (tl) { insertCard(tl, hit.card); renderPanel(); commit(); }
+    }
+    else if (act === 'restoreList') { restoreList(id); renderPanel(); commit(); }
+    else if (act === 'restoreAll') {
+      missingPreset().lists.forEach(function (x) { restoreList(x.id); });
+      missingPreset().cards.forEach(function (e) {
+        var tl2 = state.lists.filter(function (x) { return x.id === e.listId; })[0];
+        if (tl2) insertCard(tl2, e.card);
+      });
+      renderPanel(); commit();
+    }
+    else if (act === 'shot') { startShot(); }
+    else if (act === 'shotApply') { applyShot(); }
+    else if (act === 'shotCancel') { shot = null; say(''); renderPanel(); }
+    else if (act === 'img') { pickImages(false, id); }
+    else if (act === 'imgBulk') { pickImages(true); }
+    else if (act === 'backupSave') { downloadBackup(); }
+    else if (act === 'backupLoad') { loadBackup(); }
+  });
+  function addCardFromInput() {
+    var inp = $('#newCardName'); if (!inp || !inp.value.trim()) return;
+    addCards(cur(), inp.value); inp.value = ''; commit(); inp.focus();
+  }
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && e.target && e.target.id === 'newCardName') { e.preventDefault(); addCardFromInput(); }
+  });
+  document.addEventListener('change', function (e) {
+    if (e.target && e.target.id === 'shotStart' && shot) {
+      var v = parseInt(e.target.value, 10);
+      if (v >= 0) { shot.start = v; renderPanel(); }
+    }
+  });
+  $('#q').addEventListener('input', function (e) { query = e.target.value; renderGrid(); });
+
+  render();
+  initLocal();
+})();
+</script>
+</body>
+</html>
