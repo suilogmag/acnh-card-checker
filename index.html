@@ -173,7 +173,7 @@ body{margin:0}
   <div class="legal">
     <p>非公式のファンツールです。任天堂とは関係ありません。「amiibo」「どうぶつの森」は任天堂の商標または登録商標です。</p>
     <p>このページにはカード画像は入っていません。カード画像は、あなたが自分でスクショを選んで取り込みます。取り込んだ画像は、あなたの端末のブラウザの中にだけ保存され、サーバーには送られません。画像は私的に使う範囲で、他人に配ったりネットに載せたりしないでください。</p>
-    <p>ブラウザのサイトデータを消すと、所持チェックも画像も消えます。「バックアップ」で所持チェックをファイルに保存しておけます。</p>
+    <p>ブラウザのサイトデータを消すと、所持チェックも画像も消えます。「バックアップ」で、所持チェックと画像をファイルに保存しておけます。</p>
   </div>
 </main>
 
@@ -843,14 +843,16 @@ body{margin:0}
     openDb().then(idbLoadAll).then(function () { renderGrid(); showDbg(); });
   }
   function downloadBackup() {
-    var out = { app: 'amiibo-card-check', v: 2, updatedAt: Date.now(), owned: state.owned, lists: state.lists, active: state.active };
+    var pics = {};
+    Object.keys(state.imgs).forEach(function (cid) { var u = urls[state.imgs[cid]]; if (u) pics[cid] = u; });
+    var out = { app: 'amiibo-card-check', v: 2, updatedAt: Date.now(), owned: state.owned, lists: state.lists, active: state.active, pics: pics };
     var blob = new Blob([JSON.stringify(out)], { type: 'application/json' });
     var a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     var d = new Date();
     a.download = 'amiibo-backup-' + d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0') + '.json';
     document.body.appendChild(a); a.click(); a.remove();
-    say('保存しました');
+    say('保存しました（画像 ' + Object.keys(pics).length + '枚を含む）');
   }
   function loadBackup() {
     var inp = document.createElement('input');
@@ -863,7 +865,19 @@ body{margin:0}
         if (!d || d.app !== 'amiibo-card-check' || !d.owned || !d.lists) throw new Error('bad');
         var imgs = state.imgs;
         state = normalize({ v: 2, updatedAt: Date.now(), active: d.active, owned: d.owned, imgs: imgs, lists: d.lists });
-        saveLocal(); render(); say('読み込みました');
+        saveLocal(); render();
+        var pics = d.pics && typeof d.pics === 'object' ? d.pics : {}, ids = Object.keys(pics), k = 0, ok = 0;
+        if (!ids.length) { say('読み込みました'); return; }
+        var valid = {};
+        allCards().forEach(function (c) { valid[c.id] = 1; });
+        (function next() {
+          if (k >= ids.length) { say('読み込みました（画像 ' + ok + '枚）'); if (ok) commit(); return; }
+          var cid = ids[k++];
+          say('画像を読み込み中… ' + k + ' / ' + ids.length);
+          if (!valid[cid] || typeof pics[cid] !== 'string' || pics[cid].indexOf('data:image/') !== 0) return next();
+          fetch(pics[cid]).then(function (r) { return r.blob(); }).then(function (b) { return assetsApi.upload(b); })
+            .then(function (r) { state.imgs[cid] = r.id; ok++; }).catch(function () {}).then(next);
+        })();
       }).catch(function () { say('読み込めませんでした。このページで保存したバックアップファイルを選んでください。'); });
     };
     inp.click();
@@ -960,7 +974,7 @@ body{margin:0}
       el.innerHTML = html + restoreHtml() + '</section>';
     } else if (panel === 'backup') {
       el.innerHTML = '<section class="panel"><h2>バックアップ</h2>' +
-        '<p class="hint" style="margin:0">所持チェックとダブり枚数を、ファイルに保存・読み込みできます。画像は含まれません（機種変更のときは、画像だけスクショから入れ直しになります）。</p>' +
+        '<p class="hint" style="margin:0">所持チェック、ダブり枚数、取り込んだカード画像を、ファイルに保存・読み込みできます。画像を含むので、ファイルは大きくなります（504枚で10MBほど）。機種変更や、ブラウザのデータを消す前に使ってください。</p>' +
         '<div class="row"><button class="btn primary" type="button" data-act="backupSave">ファイルに保存</button><button class="btn" type="button" data-act="backupLoad">ファイルから読み込む</button></div></section>';
     } else {
       el.innerHTML = '';
