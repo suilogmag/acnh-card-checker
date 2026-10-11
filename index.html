@@ -111,7 +111,8 @@ button { cursor: pointer; }
 .empty { grid-column: 1 / -1; text-align: center; color: var(--muted); padding: 28px 8px; }
 
 /* actions + panels */
-.actions { display: flex; flex-wrap: wrap; gap: 8px; padding-block: 4px 8px; }
+.actions { display: flex; flex-wrap: wrap; gap: 6px; padding-block: 4px 8px; }
+.actions .btn { padding-inline: 11px; }
 .actions .btn[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
 .panel { background: var(--surface); border: 1.5px solid var(--line); border-radius: 14px; padding: 14px 16px 16px; margin-top: 10px; display: grid; gap: 8px; }
 .panel h2 { margin: 0; font-family: var(--font-display); font-size: 1.05rem; }
@@ -162,7 +163,7 @@ body{margin:0}
   <p class="hint">番号順に並んでいます。タップで所持にし、右上の＋でダブり枚数を記録できます。</p>
 
   <div class="actions">
-    <button class="btn primary" type="button" data-act="panel" data-v="memo" id="btnMemo">交換メモを作る</button>
+    <button class="btn primary" type="button" data-act="panel" data-v="memo" id="btnMemo">交換メモ</button>
     <button class="btn" type="button" data-act="panel" data-v="add" id="btnAdd">弾を追加</button>
     <button class="btn" type="button" data-act="panel" data-v="edit" id="btnEdit">画像</button>
     <button class="btn" type="button" data-act="panel" data-v="backup" id="btnBackup">バックアップ</button>
