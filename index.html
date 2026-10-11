@@ -979,7 +979,7 @@ body{margin:0}
       var html = '<section class="panel"><h2>画像を入れる<small>' + esc(l.name) + '</small></h2>';
       if (assetsApi) {
         html += '<label>カード画像</label>' +
-          '<div class="row"><button class="btn primary" type="button" data-act="shot">スクショから取り込む</button><button class="btn" type="button" data-act="imgBulk">番号付きファイルをまとめて追加</button></div>' +
+          '<div class="row"><button class="btn primary" type="button" data-act="shot">スクショから取り込む</button></div>' +
           '<p class="hint" style="margin:0">任天堂の公式一覧を2列のまま縦にスクショして選ぶと、全体が見えているカードだけを順に切り出します。ページ全体のスクショ（フルページ）も使えます。1枚ずつは各カードの「画像」から設定できます。</p>' + shotHtml();
       }
       el.innerHTML = html + restoreHtml() + '</section>';
