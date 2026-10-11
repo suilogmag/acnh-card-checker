@@ -164,7 +164,7 @@ body{margin:0}
   <div class="actions">
     <button class="btn primary" type="button" data-act="panel" data-v="memo" id="btnMemo">交換メモを作る</button>
     <button class="btn" type="button" data-act="panel" data-v="add" id="btnAdd">弾を追加</button>
-    <button class="btn" type="button" data-act="panel" data-v="edit" id="btnEdit">編集・画像</button>
+    <button class="btn" type="button" data-act="panel" data-v="edit" id="btnEdit">画像</button>
     <button class="btn" type="button" data-act="panel" data-v="backup" id="btnBackup">バックアップ</button>
   </div>
   <div id="panel"></div>
@@ -926,7 +926,7 @@ body{margin:0}
   function renderGrid() {
     var l = cur(), editing = panel === 'edit', q = query.trim().toLowerCase();
     $('#grid').className = 'grid' + (editing ? ' editing' : '') + ((state.active === 'sanrio' || state.active === 'plus') ? ' land' : '');
-    if (!l.cards.length) { $('#grid').innerHTML = '<p class="empty">カードがありません。「編集・画像」から追加できます。</p>'; return; }
+    if (!l.cards.length) { $('#grid').innerHTML = '<p class="empty">カードがありません。</p>'; return; }
     var html = l.cards.map(function (c, i) {
       var n = state.owned[c.id] || 0;
       if (filter === 'miss' && n > 0) return '';
@@ -962,7 +962,7 @@ body{margin:0}
   }
   function renderPanel() {
     var el = $('#panel'), l = cur();
-    $('#btnEdit').textContent = assetsApi ? '編集・画像' : '編集';
+    $('#btnEdit').textContent = '画像';
     ['Memo', 'Add', 'Edit', 'Backup'].forEach(function (k) { $('#btn' + k).setAttribute('aria-pressed', String(panel === k.toLowerCase())); });
     if (panel === 'memo') {
       el.innerHTML = '<section class="panel"><h2>交換メモ<small>' + esc(l.name) + '</small></h2>' +
@@ -976,18 +976,11 @@ body{margin:0}
         '<textarea id="newListCards" rows="6" placeholder="名前を貼り付けできます"></textarea>' +
         '<div class="row"><button class="btn primary" type="button" data-act="addList">追加する</button><span class="msg" id="addMsg" role="status"></span></div></section>';
     } else if (panel === 'edit') {
-      var html = '<section class="panel"><h2>' + esc(l.name) + 'を編集</h2>';
+      var html = '<section class="panel"><h2>画像を入れる<small>' + esc(l.name) + '</small></h2>';
       if (assetsApi) {
         html += '<label>カード画像</label>' +
           '<div class="row"><button class="btn primary" type="button" data-act="shot">スクショから取り込む</button><button class="btn" type="button" data-act="imgBulk">番号付きファイルをまとめて追加</button></div>' +
           '<p class="hint" style="margin:0">任天堂の公式一覧を2列のまま縦にスクショして選ぶと、全体が見えているカードだけを順に切り出します。ページ全体のスクショ（フルページ）も使えます。1枚ずつは各カードの「画像」から設定できます。</p>' + shotHtml();
-      }
-      if (!l.virtual) {
-        html += '<label for="newCardName">カードを追加</label>' +
-          '<div class="row"><input id="newCardName" placeholder="カード名" maxlength="30"><button class="btn primary" type="button" data-act="addCard">追加</button></div>' +
-          '';
-      } else {
-        html += '<p class="hint" style="margin:0">カードの追加・削除は、各弾のタブで行います。</p>';
       }
       el.innerHTML = html + restoreHtml() + '</section>';
     } else if (panel === 'backup') {
