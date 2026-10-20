@@ -161,6 +161,7 @@ body{margin:0}
     <div class="seg" id="filters" role="group" aria-label="表示の絞り込み"></div>
     <div class="bulk">
       <button class="btn" type="button" data-act="toggleSp" id="btnSp" aria-pressed="false">SPを除く</button>
+      <button class="btn" type="button" data-act="toggleSpOnly" id="btnSpOnly" aria-pressed="false">SPのみ</button>
       <button class="btn" type="button" data-act="allOwn">全て所持</button>
       <button class="btn" type="button" data-act="allClear">全て解除</button>
     </div>
@@ -781,8 +782,8 @@ body{margin:0}
   function allCards() { var out = []; state.lists.forEach(function (l) { out = out.concat(l.cards); }); return out; }
   /* "SP" cards: 001-017, 101-117, 201-217, 301-316, 401-424 of the numbered series */
   var SP_KEY = 'amiibo-hide-sp';
-  var hideSp = false;
-  try { hideSp = localStorage.getItem(SP_KEY) === '1'; } catch (e) {}
+  var spMode = 0; /* 0=all, 1=hide SP, 2=SP only */
+  try { spMode = Number(localStorage.getItem(SP_KEY)) || 0; } catch (e) {}
   function isSp(c) {
     var m = /^n(\d{3})$/.exec(c.id);
     if (!m) return false;
@@ -795,13 +796,13 @@ body{margin:0}
   }
   function cur() {
     var l = curAll();
-    if (!hideSp) return l;
+    if (!spMode) return l;
     var o = {};
     Object.keys(l).forEach(function (k) { o[k] = l[k]; });
-    o.cards = l.cards.filter(function (c) { return !isSp(c); });
+    o.cards = l.cards.filter(function (c) { return spMode === 2 ? isSp(c) : !isSp(c); });
     return o;
   }
-  function syncSp() { var b = document.getElementById('btnSp'); if (b) b.setAttribute('aria-pressed', String(hideSp)); }
+  function syncSp() { var b = document.getElementById('btnSp'); if (b) b.setAttribute('aria-pressed', String(spMode === 1)); var o = document.getElementById('btnSpOnly'); if (o) o.setAttribute('aria-pressed', String(spMode === 2)); }
   function stats(l) {
     var own = 0, spare = 0;
     l.cards.forEach(function (c) { var n = state.owned[c.id] || 0; if (n > 0) { own++; spare += n - 1; } });
@@ -1298,7 +1299,8 @@ body{margin:0}
     if (!t) return;
     var act = t.getAttribute('data-act'), id = t.getAttribute('data-id'), l = cur();
     if (act === 'tab') { state.active = id; say(''); renderPanel(); commit(); }
-    else if (act === 'toggleSp') { hideSp = !hideSp; try { localStorage.setItem(SP_KEY, hideSp ? '1' : '0'); } catch (err) {} syncSp(); render(); }
+    else if (act === 'toggleSp') { spMode = spMode === 1 ? 0 : 1; try { localStorage.setItem(SP_KEY, String(spMode)); } catch (err) {} syncSp(); render(); }
+    else if (act === 'toggleSpOnly') { spMode = spMode === 2 ? 0 : 2; try { localStorage.setItem(SP_KEY, String(spMode)); } catch (err) {} syncSp(); render(); }
     else if (act === 'filter') { filter = t.getAttribute('data-v'); renderFilters(); renderGrid(); }
     else if (act === 'toggle') { if (state.owned[id]) delete state.owned[id]; else state.owned[id] = 1; commit(); }
     else if (act === 'spare') { var n = state.owned[id] || 0; if (n > 0) { state.owned[id] = n >= 6 ? 1 : n + 1; commit(); } }
