@@ -73,6 +73,7 @@ button { cursor: pointer; }
 .seg button + button { border-left: 1px solid var(--line); }
 .seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); font-weight: 700; }
 .bulk { display: flex; gap: 8px; }
+.bulk .btn[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
 .btn { border: 1.5px solid var(--line); background: var(--surface); border-radius: 10px; padding: 7px 13px; font-size: .86rem; font-weight: 700; }
 .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
 .btn.danger { color: var(--danger); border-color: var(--danger); }
@@ -156,6 +157,7 @@ body{margin:0}
   <div class="controls">
     <div class="seg" id="filters" role="group" aria-label="表示の絞り込み"></div>
     <div class="bulk">
+      <button class="btn" type="button" data-act="toggleSp" id="btnSp" aria-pressed="false">SPを除く</button>
       <button class="btn" type="button" data-act="allOwn">全て所持</button>
       <button class="btn" type="button" data-act="allClear">全て解除</button>
     </div>
@@ -774,10 +776,29 @@ body{margin:0}
   function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function uid() { return Math.random().toString(36).slice(2, 9); }
   function allCards() { var out = []; state.lists.forEach(function (l) { out = out.concat(l.cards); }); return out; }
-  function cur() {
+  /* "SP" cards: 001-017, 101-117, 201-217, 301-316, 401-424 of the numbered series */
+  var SP_KEY = 'amiibo-hide-sp';
+  var hideSp = false;
+  try { hideSp = localStorage.getItem(SP_KEY) === '1'; } catch (e) {}
+  function isSp(c) {
+    var m = /^n(\d{3})$/.exec(c.id);
+    if (!m) return false;
+    var n = Number(m[1]);
+    return (n >= 1 && n <= 17) || (n >= 101 && n <= 117) || (n >= 201 && n <= 217) || (n >= 301 && n <= 316) || (n >= 401 && n <= 424);
+  }
+  function curAll() {
     if (state.active === 'all') return { id: 'all', name: 'すべて', cards: allCards(), virtual: true };
     return state.lists.filter(function (l) { return l.id === state.active; })[0] || state.lists[0];
   }
+  function cur() {
+    var l = curAll();
+    if (!hideSp) return l;
+    var o = {};
+    Object.keys(l).forEach(function (k) { o[k] = l[k]; });
+    o.cards = l.cards.filter(function (c) { return !isSp(c); });
+    return o;
+  }
+  function syncSp() { var b = document.getElementById('btnSp'); if (b) b.setAttribute('aria-pressed', String(hideSp)); }
   function stats(l) {
     var own = 0, spare = 0;
     l.cards.forEach(function (c) { var n = state.owned[c.id] || 0; if (n > 0) { own++; spare += n - 1; } });
@@ -993,7 +1014,7 @@ body{margin:0}
     }
   }
   function refresh() { renderHead(); renderTabs(); renderGrid(); if (panel === 'memo') renderPanel(); }
-  function render() { renderFilters(); refresh(); renderPanel(); }
+  function render() { syncSp(); renderFilters(); refresh(); renderPanel(); }
 
   /* ---------- images ---------- */
   function resizeToBlob(file) {
@@ -1206,7 +1227,7 @@ body{margin:0}
           return { x: x, y: y, w: Math.min(bmp.width - x, Math.ceil(r.w / sc)), h: Math.min(bmp.height - y, Math.ceil(r.h / sc)) };
         });
         shot = {
-          start: firstMissingIndex(cur().cards),
+          start: firstMissingIndex(curAll().cards),
           crops: rects.map(function (r) {
             var c = document.createElement('canvas');
             c.width = r.w; c.height = r.h;
@@ -1222,7 +1243,7 @@ body{margin:0}
   }
   function shotHtml() {
     if (!shot) return '';
-    var pool = cur().cards;
+    var pool = curAll().cards;
     if (shot.start >= pool.length) shot.start = 0;
     var tiles = shot.crops.map(function (c, i) {
       var card = pool[shot.start + i];
@@ -1241,7 +1262,7 @@ body{margin:0}
   }
   function applyShot() {
     if (!shot || !assetsApi) return;
-    var pool = cur().cards;
+    var pool = curAll().cards;
     var jobs = shot.crops.map(function (c, i) { var card = pool[shot.start + i]; return card ? { canvas: c.canvas, id: card.id } : null; }).filter(Boolean);
     var ok = 0, k = 0;
     function next() {
@@ -1274,6 +1295,7 @@ body{margin:0}
     if (!t) return;
     var act = t.getAttribute('data-act'), id = t.getAttribute('data-id'), l = cur();
     if (act === 'tab') { state.active = id; say(''); renderPanel(); commit(); }
+    else if (act === 'toggleSp') { hideSp = !hideSp; try { localStorage.setItem(SP_KEY, hideSp ? '1' : '0'); } catch (err) {} syncSp(); render(); }
     else if (act === 'filter') { filter = t.getAttribute('data-v'); renderFilters(); renderGrid(); }
     else if (act === 'toggle') { if (state.owned[id]) delete state.owned[id]; else state.owned[id] = 1; commit(); }
     else if (act === 'spare') { var n = state.owned[id] || 0; if (n > 0) { state.owned[id] = n >= 6 ? 1 : n + 1; commit(); } }
